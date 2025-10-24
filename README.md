@@ -107,6 +107,74 @@ chmod +x install.sh
 sudo ./install.sh
 ```
 
+## 📦 Deploying Documentation
+
+### Automated Deployment Script
+
+Deploy this documentation to production or staging servers using the provided script:
+
+```bash
+# Download deployment script
+wget https://raw.githubusercontent.com/juliobrasa/documentation/main/desplegar-documentacion.sh
+chmod +x desplegar-documentacion.sh
+
+# Deploy to staging
+sudo ./desplegar-documentacion.sh
+
+# Deploy to production
+sudo ./desplegar-documentacion.sh -e production -b main
+```
+
+**Features:**
+- ✅ Automatic Git clone/pull
+- ✅ Automatic backups before deployment
+- ✅ Web server configuration (Apache/Nginx)
+- ✅ Firewall setup
+- ✅ Permission management
+- ✅ Deployment verification
+
+**Available Options:**
+```bash
+-e, --environment    production | staging (default: staging)
+-b, --branch         Git branch to deploy (default: main)
+-d, --directory      Installation directory (default: /var/www/docs)
+-w, --web-server     apache | nginx | none (default: apache)
+-p, --port           Web server port (default: 8080)
+-h, --help           Show help
+```
+
+**Examples:**
+```bash
+# Staging deployment with develop branch
+sudo ./desplegar-documentacion.sh -e staging -b develop -p 8081
+
+# Production with Nginx
+sudo ./desplegar-documentacion.sh -e production -w nginx -p 8090
+
+# Just clone/update without web server
+sudo ./desplegar-documentacion.sh -w none -d /opt/docs
+```
+
+### Rollback Script
+
+If you need to rollback to a previous version:
+
+```bash
+# List available backups
+sudo ./rollback-documentacion.sh -l
+
+# Restore latest backup
+sudo ./rollback-documentacion.sh
+
+# Restore specific backup
+sudo ./rollback-documentacion.sh -b /var/backups/docs/docs_backup_20251023_120000.tar.gz
+
+# Rollback to specific Git commit
+sudo ./rollback-documentacion.sh -c abc1234
+```
+
+For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md)
+
 ## 📖 Documentation Structure
 
 ```
