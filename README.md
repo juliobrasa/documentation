@@ -1,117 +1,153 @@
 # Hosting Management Platform - Documentation
 
-Documentación completa del sistema de gestión de hosting.
+Documentation for the Hosting Management Platform running on Proxmox virtualization infrastructure.
 
-## 📚 Índice de Contenidos
+**Last Updated:** December 2025
 
-### 🚀 Getting Started
+## Infrastructure Overview
+
+The platform runs on a **Proxmox VE** hypervisor with multiple specialized VMs:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Proxmox VE Host                           │
+├─────────────────────────────────────────────────────────────┤
+│  10.0.0.100  │  10.0.0.101  │  10.0.0.102  │  10.0.0.103   │
+│   cuentas    │  gestionpiso │  devostelio  │    admin      │
+├──────────────┼──────────────┼──────────────┼───────────────┤
+│  10.0.0.104  │  10.0.0.105  │  10.0.0.106  │  10.0.0.107   │
+│     ips      │    kavia     │   ansible    │ manageremail  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Technology Stack
+
+| Component | Version |
+|-----------|---------|  
+| OS | Debian 13 (Trixie) |
+| Web Server | Nginx 1.27+ |
+| PHP | 8.4 with FPM |
+| Database | MariaDB 11.8 |
+| Framework | Laravel 10.x/11.x |
+
+## Documentation Index
+
+### Getting Started
 - [Installation Guide](guides/installation.md)
-- [Quick Start](guides/quickstart.md)
 - [System Requirements](guides/requirements.md)
+- [Quick Start](guides/quickstart.md)
 
-### 🏗️ Architecture
+### Architecture
 - [System Architecture](architecture/overview.md)
+- [Proxmox Infrastructure](architecture/infrastructure-proxmox.md)
 - [Database Design](architecture/database.md)
 - [API Architecture](architecture/api.md)
 - [Security Model](architecture/security.md)
 
-### 💻 Components
-- [WHM Panel](guides/whm-panel.md)
-- [cPanel Integration](guides/cpanel-integration.md)
-- [Admin Panel](guides/admin-panel.md)
+### Components
 
-### 🔌 API Documentation
+#### Virtual Machines
+
+| VM | IP | Application | Purpose |
+|----|-----|-------------|---------|
+| cuentas | 10.0.0.100 | Cuentas App | Kavia Hotels accounts |
+| gestionpiso | 10.0.0.101 | Alquiler App | Property rental |
+| devostelio | 10.0.0.102 | Dev Environment | Development/staging |
+| admin | 10.0.0.103 | SOLTIA Admin | AI-powered administration |
+| ips | 10.0.0.104 | IPS App | IPS management |
+| kavia | 10.0.0.105 | Kavia App | Kavia platform |
+| ansible | 10.0.0.106 | Automation | Ansible controller |
+| manageremail | 10.0.0.107 | Email | Email management |
+
+#### External Servers
+
+| Server | IP | OS | Purpose |
+|--------|-----|-----|--------- |
+| cpanel1 | 184.174.36.104 | AlmaLinux 8.10 | cPanel hosting |
+| soltia1 | cph02.soltia.net | CloudLinux 8.10 | cPanel/WHM |
+
+### SOLTIA AI System
+
+The admin VM (10.0.0.103) runs the SOLTIA enterprise IA system with **25 specialized agents**:
+
+| Department | Agents | Function |
+|------------|--------|----------|
+| Executives | 3 | Strategic decisions |
+| Infrastructure | 4 | Server management |
+| Security | 3 | Threat detection |
+| DevOps | 5 | CI/CD, automation |
+| Support | 4 | User assistance |
+| Commercial | 3 | Billing, sales |
+| Data | 3 | Analytics |
+
+**Tech Stack (Docker):**
+- Redis: Cache and queues
+- Elasticsearch: Search and RAG
+- Qdrant: Vector embeddings
+- PostgreSQL: RAG metadata
+
+### API Documentation
 - [API Overview](api/overview.md)
 - [Authentication](api/authentication.md)
 - [Endpoints Reference](api/endpoints.md)
 - [Webhooks](api/webhooks.md)
 
-### 🚢 Deployment
+### Deployment
 - [Production Deployment](deployment/production.md)
 - [Docker Setup](deployment/docker.md)
 - [Scaling Guide](deployment/scaling.md)
 - [Backup & Recovery](deployment/backup.md)
 
-### 🔧 Administration
+### Administration
 - [User Management](guides/user-management.md)
 - [System Configuration](guides/configuration.md)
 - [Monitoring](guides/monitoring.md)
 - [Troubleshooting](guides/troubleshooting.md)
 
-### 🔐 Security
+### Security
 - [Security Best Practices](guides/security.md)
 - [SSL Configuration](guides/ssl.md)
 - [Firewall Setup](guides/firewall.md)
 
-## 🏛️ System Overview
+## Quick Installation
 
-The Hosting Management Platform is a comprehensive solution for managing web hosting services, consisting of three main components:
+### Prerequisites
+- Proxmox VE 8.x with VMs configured
+- Debian 13 on each VM
+- Network 10.0.0.x configured
 
-### WHM Panel
-Complete WHM server management interface with:
-- Multi-server management
-- Account creation and management
-- Package management
-- Reseller management
-- Backup automation
-- Resource monitoring
-
-### cPanel Integration System
-Enterprise-grade billing and automation system:
-- Complete billing system
-- Subscription management
-- Invoice generation
-- Payment processing
-- Automated installer
-- License management
-
-### Admin Panel
-Central administration and monitoring:
-- User management
-- System configuration
-- API management
-- Audit logging
-- Health monitoring
-- Report generation
-
-## 🔗 Quick Links
-
-- **GitHub Repositories**
-  - [WHM Panel](https://github.com/juliobrasa/whm)
-  - [cPanel System](https://github.com/juliobrasa/cpanel)
-  - [Admin Panel](https://github.com/juliobrasa/admin-panel)
-  - [API System](https://github.com/juliobrasa/api)
-  - [Database](https://github.com/juliobrasa/database)
-  - [Installer](https://github.com/juliobrasa/installer)
-
-- **Live Systems**
-  - WHM Panel: https://whm.soporteclientes.net
-  - cPanel: https://cpanel1.soporteclientes.net
-  - Admin: https://admin.soporteclientes.net
-
-## 📋 Prerequisites
-
-- CentOS/RHEL/AlmaLinux 7+
-- PHP 8.0+
-- MySQL/MariaDB 5.7+
-- Apache/Nginx
-- Composer
-- Node.js & NPM
-- Redis (optional)
-
-## 🚀 Quick Installation
+### Install on a VM
 
 ```bash
-wget https://raw.githubusercontent.com/juliobrasa/installer/master/scripts/install.sh
-chmod +x install.sh
-sudo ./install.sh
+# Update system
+apt update && apt upgrade -y
+
+# Install stack
+apt install -y nginx php8.4-fpm php8.4-cli php8.4-common \
+    php8.4-mysql php8.4-xml php8.4-mbstring php8.4-curl \
+    php8.4-zip php8.4-gd php8.4-bcmath mariadb-server git
+
+# Install Composer
+curl -sS https://getcomposer.org/installer | php
+mv composer.phar /usr/local/bin/composer
+
+# Clone and setup application
+cd /var/www
+git clone https://github.com/juliobrasa/[app].git app
+cd app
+composer install --no-dev
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+
+# Set permissions
+chown -R www-data:www-data /var/www/app
+chmod -R 775 storage bootstrap/cache
 ```
 
-## 📦 Deploying Documentation
+## Documentation Deployment
 
-### Automated Deployment Script
-
-Deploy this documentation to production or staging servers using the provided script:
+### Deploy to Server
 
 ```bash
 # Download deployment script
@@ -125,78 +161,81 @@ sudo ./desplegar-documentacion.sh
 sudo ./desplegar-documentacion.sh -e production -b main
 ```
 
-**Features:**
-- ✅ Automatic Git clone/pull
-- ✅ Automatic backups before deployment
-- ✅ Web server configuration (Apache/Nginx)
-- ✅ Firewall setup
-- ✅ Permission management
-- ✅ Deployment verification
-
-**Available Options:**
-```bash
--e, --environment    production | staging (default: staging)
--b, --branch         Git branch to deploy (default: main)
--d, --directory      Installation directory (default: /var/www/docs)
--w, --web-server     apache | nginx | none (default: apache)
--p, --port           Web server port (default: 8080)
--h, --help           Show help
-```
-
-**Examples:**
-```bash
-# Staging deployment with develop branch
-sudo ./desplegar-documentacion.sh -e staging -b develop -p 8081
-
-# Production with Nginx
-sudo ./desplegar-documentacion.sh -e production -w nginx -p 8090
-
-# Just clone/update without web server
-sudo ./desplegar-documentacion.sh -w none -d /opt/docs
-```
-
-### Rollback Script
-
-If you need to rollback to a previous version:
+### Rollback
 
 ```bash
-# List available backups
+# List backups
 sudo ./rollback-documentacion.sh -l
 
-# Restore latest backup
+# Restore latest
 sudo ./rollback-documentacion.sh
-
-# Restore specific backup
-sudo ./rollback-documentacion.sh -b /var/backups/docs/docs_backup_20251023_120000.tar.gz
-
-# Rollback to specific Git commit
-sudo ./rollback-documentacion.sh -c abc1234
 ```
 
-For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md)
-
-## 📖 Documentation Structure
+## Repository Structure
 
 ```
 documentation/
-├── guides/              # User and admin guides
-├── api/                # API documentation
-├── architecture/       # System architecture docs
-└── deployment/         # Deployment guides
+├── README.md                           # This file
+├── DEPLOYMENT.md                       # Deployment instructions
+├── architecture/
+│   ├── overview.md                     # System architecture
+│   ├── infrastructure-proxmox.md       # Proxmox VMs details
+│   ├── database.md                     # Database design
+│   ├── api.md                          # API architecture
+│   └── security.md                     # Security model
+├── guides/
+│   ├── installation.md                 # Installation guide
+│   ├── requirements.md                 # System requirements
+│   ├── quickstart.md                   # Quick start
+│   ├── configuration.md                # Configuration
+│   ├── user-management.md              # User management
+│   ├── monitoring.md                   # Monitoring
+│   ├── troubleshooting.md              # Troubleshooting
+│   ├── security.md                     # Security practices
+│   ├── ssl.md                          # SSL configuration
+│   └── firewall.md                     # Firewall setup
+├── api/
+│   ├── overview.md                     # API overview
+│   ├── authentication.md               # Authentication
+│   ├── endpoints.md                    # Endpoints reference
+│   └── webhooks.md                     # Webhooks
+└── deployment/
+    ├── production.md                   # Production deployment
+    ├── docker.md                       # Docker setup
+    ├── scaling.md                      # Scaling guide
+    └── backup.md                       # Backup & recovery
 ```
 
-## 🤝 Contributing
+## GitHub Repositories
 
-Please read our contributing guidelines before submitting pull requests.
+| Repository | Description |
+|------------|-------------|
+| [documentation](https://github.com/juliobrasa/documentation) | This documentation |
+| [whm](https://github.com/juliobrasa/whm) | WHM Panel |
+| [cpanel](https://github.com/juliobrasa/cpanel) | cPanel System |
+| [admin-panel](https://github.com/juliobrasa/admin-panel) | Admin Panel |
+| [api](https://github.com/juliobrasa/api) | API System |
+| [database](https://github.com/juliobrasa/database) | Database schemas |
+| [installer](https://github.com/juliobrasa/installer) | Installation scripts |
 
-## 📝 License
+## Live Systems
 
-Proprietary software - All rights reserved
+| System | URL |
+|--------|-----|
+| Admin Panel | https://admin.soporteclientes.net |
+| Cuentas | https://cuentas.kaviahoteles.com |
+| Alquiler | https://clientes.gestiondepiso.com |
+| IPS | https://ips.soporteclientes.net |
+| Kavia | https://kavia.ostelio.com |
 
-## 📞 Support
+## Support
 
-For technical support, please contact the development team.
+For technical support, contact the development team.
+
+## License
+
+Proprietary software - All rights reserved.
 
 ---
 
-*Last updated: August 2025*
+*Documentation maintained by the SOLTIA development team*

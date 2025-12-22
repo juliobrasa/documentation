@@ -4,432 +4,356 @@ Complete system requirements for the Hosting Management Platform.
 
 ## Overview
 
-This document outlines all hardware, software, and network requirements for deploying the Hosting Management Platform.
+This document outlines all hardware, software, and network requirements for deploying the Hosting Management Platform on the Proxmox virtualization infrastructure.
 
-## Hardware Requirements
+## Infrastructure Requirements
 
-### Minimum Requirements (Testing/Development)
+### Proxmox Host (Hypervisor)
 
-**Single Server Setup:**
-- **CPU**: 2 cores @ 2.0 GHz
-- **RAM**: 2 GB
-- **Storage**: 20 GB SSD
-- **Network**: 100 Mbps
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| CPU | 4 cores @ 2.5 GHz | 8+ cores @ 3.0 GHz |
+| RAM | 16 GB | 32+ GB |
+| Storage | 200 GB SSD | 500+ GB NVMe |
+| Network | 1 Gbps | 10 Gbps |
+| OS | Proxmox VE 7.x | Proxmox VE 8.x |
 
-**Suitable for:**
-- Development environments
-- Testing installations
-- Up to 10 hosting accounts
-- Single administrator
+### Standard Virtual Machine (per application)
 
-### Recommended Requirements (Production)
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| vCPU | 1 core | 2 cores |
+| RAM | 1 GB | 2 GB |
+| Disk | 10 GB | 20 GB |
+| Network | virtio | virtio |
 
-**Single Server Setup:**
-- **CPU**: 4 cores @ 2.5 GHz or higher
-- **RAM**: 8 GB (16 GB preferred)
-- **Storage**: 100 GB SSD
-- **Network**: 1 Gbps
-- **Backup Storage**: 200 GB minimum
+### Admin VM (SOLTIA + Docker Stack)
 
-**Suitable for:**
-- Small to medium production
-- Up to 100 hosting accounts
-- Multiple administrators
-- Basic reseller hosting
-
-### High-Performance Requirements (Enterprise)
-
-**Multi-Server Setup:**
-
-**Application Server:**
-- **CPU**: 8+ cores @ 3.0 GHz
-- **RAM**: 16-32 GB
-- **Storage**: 200 GB NVMe SSD
-- **Network**: 1-10 Gbps
-
-**Database Server:**
-- **CPU**: 8+ cores @ 3.0 GHz
-- **RAM**: 32-64 GB
-- **Storage**: 500 GB NVMe SSD with RAID 10
-- **Network**: 10 Gbps
-
-**WHM Servers (Multiple):**
-- Per WHM specifications
-- Additional resources as needed
-
-**Load Balancer:**
-- **CPU**: 4 cores
-- **RAM**: 8 GB
-- **Network**: 10 Gbps
-
-**Suitable for:**
-- Large production environments
-- 500+ hosting accounts
-- High availability requirements
-- Multiple resellers
-- Heavy API usage
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| vCPU | 2 cores | 4 cores |
+| RAM | 4 GB | 8 GB |
+| Disk | 40 GB | 80 GB |
+| Network | virtio | virtio |
 
 ## Software Requirements
 
 ### Operating System
 
-**Supported:**
-- CentOS 7.x / 8.x (x86_64)
-- RHEL 7.x / 8.x (x86_64)
-- AlmaLinux 8.x (x86_64)
-- Rocky Linux 8.x (x86_64)
+| OS | Version | Status |
+|----|---------|--------|
+| **Debian** | **13 (Trixie)** | **Primary - Production** |
+| Debian | 12 (Bookworm) | Supported |
+| Ubuntu | 24.04 LTS | Supported |
+| AlmaLinux | 8.x / 9.x | Supported (external servers) |
+| CloudLinux | 8.x | Supported (cPanel servers) |
 
-**Not Supported:**
-- Ubuntu/Debian (may work but not tested)
-- Windows Server
-- macOS
-- 32-bit systems
-
-**Recommended:** AlmaLinux 8.x (CentOS replacement)
+**Note:** CentOS is deprecated. AlmaLinux or Rocky Linux are recommended for RHEL compatibility.
 
 ### Web Server
 
-**Apache HTTP Server:**
-- Version: 2.4.6 or higher
-- Required modules:
-  - mod_rewrite
-  - mod_ssl
-  - mod_headers
-  - mod_expires
-  - mod_deflate
-
-**OR Nginx:**
-- Version: 1.18 or higher
-- With PHP-FPM support
-
-**Note:** Apache is recommended for easier cPanel integration.
+| Software | Version | Status | Notes |
+|----------|---------|--------|-------|
+| **Nginx** | **1.27+** | **Primary** | Production VMs |
+| OpenLiteSpeed | 1.7+ | Supported | cpanel1 server |
+| Apache | 2.4+ | Legacy | Older installations |
 
 ### PHP
 
-**Version:** 8.0 or higher (8.1 recommended)
+| Version | Status | Notes |
+|---------|--------|-------|
+| **PHP 8.4** | **Primary** | Current production |
+| PHP 8.3 | Supported | Fallback option |
+| PHP 8.2 | Supported | Minimum required |
+| PHP 8.1 | Deprecated | Not recommended |
+| PHP 8.0 | Deprecated | End of life |
 
-**Required Extensions:**
-- php-cli
-- php-common
-- php-mysqlnd (MySQL Native Driver)
-- php-pdo
-- php-xml
-- php-json
-- php-mbstring
-- php-bcmath
-- php-gd
-- php-zip
-- php-curl
-- php-intl
-- php-soap
-- php-tokenizer
-- php-opcache
+#### Required PHP Extensions
 
-**PHP Configuration:**
+```bash
+# Core extensions (all VMs)
+php8.4-fpm          # FastCGI Process Manager
+php8.4-cli          # Command Line Interface
+php8.4-common       # Common files
+php8.4-mysql        # MySQL/MariaDB driver
+php8.4-xml          # XML support
+php8.4-dom          # DOM support
+php8.4-mbstring     # Multibyte strings
+php8.4-curl         # cURL library
+php8.4-zip          # ZIP archives
+php8.4-gd           # Graphics
+php8.4-bcmath       # Arbitrary precision
+php8.4-intl         # Internationalization
+php8.4-soap         # SOAP support
+php8.4-opcache      # Opcode cache
+
+# Additional for admin VM
+php8.4-redis        # Redis driver
+php8.4-pgsql        # PostgreSQL driver (RAG system)
+```
+
+#### PHP Configuration
+
 ```ini
+; /etc/php/8.4/fpm/php.ini
 memory_limit = 256M
 upload_max_filesize = 64M
 post_max_size = 64M
 max_execution_time = 300
 max_input_time = 300
 date.timezone = UTC
+opcache.enable = 1
+opcache.memory_consumption = 128
 ```
 
 ### Database
 
-**MySQL:**
-- Version: 5.7 or higher (8.0 recommended)
+| Software | Version | Status |
+|----------|---------|--------|
+| **MariaDB** | **11.8.x** | **Primary** |
+| MariaDB | 10.11.x | Supported |
+| MySQL | 8.0+ | Supported |
+| PostgreSQL | 16.x | RAG system only (admin VM) |
 
-**OR MariaDB:**
-- Version: 10.3 or higher (10.6 recommended)
+#### MariaDB Configuration
 
-**Configuration Requirements:**
-- InnoDB engine enabled
-- UTF8MB4 charset support
-- Query cache (optional but recommended)
-- Binary logging for replication (production)
-
-**Minimum Settings:**
 ```ini
+; /etc/mysql/mariadb.conf.d/50-server.cnf
+[mysqld]
+innodb_buffer_pool_size = 1G
+innodb_log_file_size = 256M
 max_connections = 200
-innodb_buffer_pool_size = 512M (adjust based on RAM)
-innodb_log_file_size = 128M
-max_allowed_packet = 64M
+query_cache_size = 64M
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
 ```
 
 ### Additional Software
 
-**Required:**
-- **Composer**: 2.0 or higher
-- **Node.js**: 14.x or higher (16.x LTS recommended)
-- **NPM**: 6.x or higher
-- **Git**: 2.x or higher
-- **OpenSSL**: 1.0.2 or higher
+| Service | Version | Purpose | Required |
+|---------|---------|---------|----------|
+| **Composer** | 2.7+ | PHP dependencies | Yes |
+| **Git** | 2.x | Version control | Yes |
+| **Supervisor** | 4.x | Process manager | Yes |
+| Node.js | 20 LTS | Build tools | Optional |
+| Redis | 7.x | Cache, queues | Recommended |
+| Certbot | Latest | SSL certificates | Recommended |
 
-**Optional but Recommended:**
-- **Redis**: 5.0 or higher (for caching and queues)
-- **Memcached**: 1.5 or higher (alternative cache)
-- **Supervisor**: Process manager for queue workers
-- **Certbot**: For Let's Encrypt SSL certificates
-- **Elasticsearch**: 7.x (for advanced search)
+### Docker Requirements (Admin VM Only)
+
+| Service | Image | Purpose |
+|---------|-------|--------|
+| Redis | redis:7-alpine | Cache and queues |
+| Elasticsearch | elasticsearch:8.11+ | Search and RAG |
+| Qdrant | qdrant/qdrant:latest | Vector database |
+| PostgreSQL | postgres:16-alpine | RAG metadata |
+
+#### Docker Resource Allocation
+
+| Container | CPU | RAM | Disk |
+|-----------|-----|-----|------|
+| Redis | 0.5 | 512 MB | 1 GB |
+| Elasticsearch | 1 | 2 GB | 10 GB |
+| Qdrant | 0.5 | 1 GB | 5 GB |
+| PostgreSQL | 0.5 | 512 MB | 5 GB |
 
 ## Network Requirements
 
-### Ports
+### VM Network Configuration
+
+| Setting | Value |
+|---------|-------|
+| Network | 10.0.0.0/24 (private) |
+| Gateway | 10.0.0.1 |
+| DNS | 10.0.0.1, 8.8.8.8, 1.1.1.1 |
+
+### Port Requirements
 
 **Inbound (Must be open):**
-- `80/TCP` - HTTP
-- `443/TCP` - HTTPS
-- `22/TCP` - SSH (restrict to admin IPs)
 
-**Optional Inbound:**
-- `2087/TCP` - WHM API access
-- `2083/TCP` - cPanel access (if direct)
-- `3306/TCP` - MySQL (only if remote access needed)
-- `6379/TCP` - Redis (only if remote access needed)
+| Port | Protocol | Service |
+|------|----------|--------|
+| 22 | TCP | SSH |
+| 80 | TCP | HTTP |
+| 443 | TCP | HTTPS |
 
-**Outbound:**
-- `80/TCP` - HTTP (for updates, APIs)
-- `443/TCP` - HTTPS (for updates, APIs)
-- `25/TCP` or `587/TCP` - SMTP (for email)
-- `2087/TCP` - WHM API (to managed servers)
+**Internal (VM-to-VM):**
+
+| Port | Protocol | Service |
+|------|----------|--------|
+| 3306 | TCP | MariaDB |
+| 6379 | TCP | Redis |
+| 9200 | TCP | Elasticsearch |
+| 6333 | TCP | Qdrant |
+| 5432 | TCP | PostgreSQL |
 
 ### Domain Names
 
-**Required:**
-- At least 3 subdomains or separate domains:
-  - WHM Panel: `whm.yourdomain.com`
-  - cPanel System: `cpanel.yourdomain.com`
-  - Admin Panel: `admin.yourdomain.com`
+Each application requires a valid domain:
 
-**Optional:**
-- API endpoint: `api.yourdomain.com`
+| Application | Domain Example |
+|-------------|----------------|
+| Admin Panel | admin.soporteclientes.net |
+| Cuentas | cuentas.kaviahoteles.com |
+| Alquiler | clientes.gestiondepiso.com |
+| IPS | ips.soporteclientes.net |
+| Kavia | kavia.ostelio.com |
 
-**DNS Requirements:**
-- Valid A records pointing to server IP
-- Ability to modify DNS records
-- TTL set appropriately (300-3600 seconds)
-
-### Bandwidth
-
-**Minimum:**
-- 1 TB/month for up to 50 accounts
-
-**Recommended:**
-- 5 TB/month for production
-- Unmetered for enterprise
-
-### IP Addresses
-
-**Minimum:**
-- 1 public IPv4 address
-
-**Recommended:**
-- 1 public IPv4 for main services
-- Additional IPs for SSL (if not using SNI)
-- IPv6 support recommended
-
-## SSL/TLS Requirements
+### SSL/TLS Requirements
 
 - **TLS 1.2** minimum (TLS 1.3 recommended)
 - Valid SSL certificates for all domains
-- **Let's Encrypt** supported (free)
-- Wildcard certificates supported
-- Self-signed certificates (development only)
+- **Let's Encrypt** supported and recommended
+- HSTS headers enabled
+
+## Laravel Requirements
+
+### Framework Versions
+
+| Version | PHP Required | Status |
+|---------|--------------|--------|
+| Laravel 11.x | PHP 8.2+ | Recommended |
+| Laravel 10.x | PHP 8.1+ | Supported |
+
+### Required PHP Extensions for Laravel
+
+- BCMath, Ctype, cURL, DOM, Fileinfo
+- JSON, Mbstring, OpenSSL, PCRE
+- PDO, Tokenizer, XML
 
 ## Browser Compatibility
 
 ### Supported Browsers
 
 **Desktop:**
-- Chrome 90+
-- Firefox 88+
-- Safari 14+
-- Edge 90+
+- Chrome 100+
+- Firefox 100+
+- Safari 16+
+- Edge 100+
 
 **Mobile:**
 - Chrome for Android
-- Safari for iOS 14+
+- Safari for iOS 16+
 
 **Not Supported:**
 - Internet Explorer (any version)
-- Opera Mini
 
 ## Security Requirements
 
 ### Firewall
 
-- Firewalld or iptables configured
-- Only necessary ports open
+- iptables/nftables configured per VM
+- Proxmox firewall at hypervisor level
 - Rate limiting configured
 - DDoS protection recommended
 
-### SELinux
-
-- Can run with SELinux enforcing
-- Permissive mode acceptable
-- Disabled mode not recommended
-
 ### SSH
 
-- Key-based authentication recommended
+- Key-based authentication required
 - Password authentication disabled (production)
-- Root login disabled (production)
-- Non-standard port recommended
-
-## WHM/cPanel Server Requirements
-
-If managing WHM/cPanel servers:
-
-### WHM Server Requirements
-- WHM 11.92 or higher
-- API token access enabled
-- JSON API available
-- Allow IP address of management server
-
-### cPanel Version
-- cPanel 11.92 or higher
-- WHMCS integration compatible
-
-## Performance Considerations
-
-### For 50 Accounts
-- 4 GB RAM minimum
-- 4 CPU cores
-- 50 GB storage
-
-### For 100 Accounts
-- 8 GB RAM minimum
-- 4-6 CPU cores
-- 100 GB storage
-
-### For 500 Accounts
-- 16 GB RAM minimum
-- 8+ CPU cores
-- 200 GB+ storage
-- Consider multi-server setup
-
-### For 1000+ Accounts
-- Multi-server setup required
-- Load balancer needed
-- Database replication
-- 32+ GB RAM
-- 16+ CPU cores distributed
+- Root login disabled
+- Non-standard port recommended (optional)
 
 ## Backup Requirements
 
 ### Storage
-- 2x production data size minimum
-- Off-site backup location
+
+- Local snapshots: 2x production data size
+- Off-site backup location required
 - 30-day retention recommended
 
 ### Backup System
-- Automated daily backups
-- Point-in-time recovery capability
+
+- XNetBackup CDP (Continuous Data Protection)
+- Proxmox VM snapshots
+- Daily database dumps
 - Tested restore procedures
-- Backup monitoring
 
-## Development Environment
+## Performance Recommendations
 
-For local development:
+### PHP-FPM Pool
 
-**Minimum:**
-- Any modern OS (Linux, macOS, Windows)
-- 4 GB RAM
-- Docker Desktop (optional but recommended)
-- Code editor (VSCode, PHPStorm)
+```ini
+; /etc/php/8.4/fpm/pool.d/www.conf
+pm = dynamic
+pm.max_children = 50
+pm.start_servers = 5
+pm.min_spare_servers = 5
+pm.max_spare_servers = 35
+pm.max_requests = 500
+```
 
-**Recommended Tools:**
-- Vagrant or Docker for local environment
-- Git for version control
-- Postman for API testing
-- MySQL Workbench or similar
+### Nginx Configuration
 
-## Third-Party Services
+```nginx
+worker_processes auto;
+worker_connections 1024;
+keepalive_timeout 65;
 
-### Optional Integrations
+gzip on;
+gzip_vary on;
+gzip_min_length 1024;
+gzip_types text/plain text/css application/json application/javascript text/xml application/xml;
+```
 
-**Payment Gateways:**
-- Stripe account
-- PayPal Business account
+## Compatibility Matrix
 
-**Email Services:**
-- SMTP server or service (Gmail, SendGrid, Mailgun)
-- Minimum 1000 emails/month
+| Component | Debian 13 | Debian 12 | Ubuntu 24.04 | AlmaLinux 8 |
+|-----------|-----------|-----------|--------------|-------------|
+| PHP 8.4 | Native | Ondrej PPA | Ondrej PPA | Remi |
+| MariaDB 11.8 | Native | MariaDB repo | MariaDB repo | MariaDB repo |
+| Nginx 1.27 | Native | Nginx repo | Nginx repo | Nginx repo |
+| Redis 7 | Native | Redis repo | Native | Remi |
 
-**Monitoring:**
-- Uptime monitoring service
-- Application performance monitoring (optional)
-
-**CDN (Optional):**
-- Cloudflare or similar
-- For static asset delivery
-
-## Licensing Requirements
-
-### Software Licenses
-
-**Open Source (Free):**
-- Linux OS
-- Apache/Nginx
-- PHP
-- MySQL/MariaDB
-- Laravel framework
-
-**Commercial (If applicable):**
-- cPanel/WHM licenses for managed servers
-- SSL certificates (if not using Let's Encrypt)
-- Premium monitoring tools (optional)
-
-## Compliance Requirements
-
-### Data Protection
-- GDPR compliance (if handling EU data)
-- Data encryption at rest
-- Secure data transmission (TLS)
-- Backup encryption
-
-### Industry Standards
-- PCI DSS (if processing payments)
-- SOC 2 (for enterprise customers)
-- ISO 27001 (for enterprise)
-
-## Scalability Considerations
-
-### Vertical Scaling
-- Plan for RAM upgrades
-- CPU upgrades possible
-- Storage expansion capability
-
-### Horizontal Scaling
-- Multiple application servers
-- Database read replicas
-- Distributed caching
-- Load balancer capacity
-
-## Testing Requirements
-
-### Recommended Test Environment
-- Separate from production
-- Similar specs to production
-- Isolated network
-- Backup/restore testing
-
-## Summary Checklist
+## Pre-Installation Checklist
 
 Before installation, verify:
 
-- [ ] Server meets minimum hardware requirements
-- [ ] Operating system is supported version
-- [ ] All required ports are open
-- [ ] Domain names are configured
-- [ ] SSL certificates are ready
+- [ ] Proxmox host meets hardware requirements
+- [ ] VMs are created with correct resources
+- [ ] Network bridge is configured (10.0.0.x)
+- [ ] Debian 13 installed on VMs
+- [ ] Domain names are configured in DNS
+- [ ] SSL certificates are ready or Let's Encrypt configured
 - [ ] Backup storage is available
-- [ ] Database server is ready
-- [ ] PHP version and extensions are correct
-- [ ] Network connectivity is stable
-- [ ] Security measures are in place
+- [ ] SSH keys are distributed
+
+## Summary by VM Type
+
+### Standard Application VM
+
+```yaml
+os: Debian 13
+cpu: 2 cores
+ram: 2 GB
+disk: 20 GB
+stack:
+  - nginx 1.27+
+  - php-fpm 8.4
+  - mariadb 11.8
+  - supervisor
+  - composer
+```
+
+### Admin VM (SOLTIA)
+
+```yaml
+os: Debian 13
+cpu: 4 cores
+ram: 4-8 GB
+disk: 40-80 GB
+stack:
+  - nginx 1.27+
+  - php-fpm 8.4
+  - mariadb 11.8
+  - docker
+  - redis
+  - elasticsearch
+  - qdrant
+  - postgresql
+```
 
 ---
 
 *For installation instructions, see [Installation Guide](installation.md)*
+*For infrastructure details, see [Proxmox Infrastructure](../architecture/infrastructure-proxmox.md)*
